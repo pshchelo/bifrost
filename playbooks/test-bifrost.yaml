@@ -113,6 +113,12 @@
           config_project_name: "baremetal"
           config_region_name: "{{ keystone.bootstrap.region_name }}"
           config_auth_url: "{{ keystone.bootstrap.public_url }}"
+        bifrost-admin:
+          config_username: "{{ keystone.bootstrap.username }}"
+          config_password: "{{ ironic.bootstrap.password }}"
+          config_project_name: "{{ keystone.bootstrap.project_name }}"
+          config_region_name: "{{ keystone.bootstrap.region_name }}"
+          config_auth_url: "{{ keystone.bootstrap.public_url }}"
       when: enable_keystone is defined and enable_keystone | bool == true
 
 - hosts: baremetal
