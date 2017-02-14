@@ -16,15 +16,17 @@
 # the example role conditionals below to query current status and deploy to
 # nodes.
 ---
-- hosts: localhost
-  connection: local
+- hosts: target
   name: "Collect facts"
   become: no
   gather_facts: yes
 - hosts: baremetal
   name: "Create configuration drive files and deploy machines from inventory"
   become: no
-  connection: local
   roles:
-    - { role: bifrost-configdrives-dynamic, when: provision_state == "available" and maintenance | bool != true }
-    - { role: bifrost-deploy-nodes-dynamic, when: provision_state == "available" and maintenance | bool != true }
+    - role: bifrost-configdrives-dynamic
+      when: provision_state == "available" and maintenance | bool != true
+      delegate_to: "{{ groups['target'][0] if groups['target'] is defined else 'localhost' }}"
+    - role: bifrost-deploy-nodes-dynamic
+      when: provision_state == "available" and maintenance | bool != true
+      delegate_to: "{{ groups['target'][0] if groups['target'] is defined else 'localhost' }}"

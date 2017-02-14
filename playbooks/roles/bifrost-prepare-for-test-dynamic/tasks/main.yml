@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
+- name: collect facts
+  setup:
+
 - name: "Wait for the base testvm machine to become available."
   wait_for: state=started port=22 host={{ ipv4_address }} timeout={{ wait_timeout }}
   when: ipv4_address is defined

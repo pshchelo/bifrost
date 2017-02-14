@@ -88,10 +88,17 @@
     task_start_default_net.rc != 0 and
     'File exists' not in task_start_default_net.stderr
 
+- name: create output file for created baremetal machines data
+  tempfile:
+    state: file
+    prefix: "bifrost"
+    suffix: "baremetal_data"
+  register: baremetal_data_file
+
 - name: "Create virtual machines"
   script: create_vm_nodes-for-role.sh
   environment:
-    NODEOUTPUT: "{{baremetal_csv_file}}"
+    NODEOUTPUT: "{{ baremetal_data_file.path }}"
     VM_RAM: "{{ test_vm_memory_size }}"
     VM_DOMAIN_TYPE: "{{ test_vm_domain_type }}"
     NODECOUNT: "{{ test_vm_num_nodes }}"
@@ -115,13 +122,17 @@
     output for additional details"
   when: task_create_vm_nodes.rc != 0
 
-- name: >
-    "Set file permissions such that the baremetal csv file at /tmp/baremetal.csv
-    can be read by the user executing Ansible"
-  file:
-    path: "{{baremetal_csv_file}}"
-    owner: "{{ansible_env.SUDO_USER}}"
-  when: >
-    ansible_env.SUDO_USER is defined and
-    baremetal_csv_file is defined and
-    baremetal_csv_file != ""
+# NOTE(pas-ha) not using 'fetch' module as it requires pretty complicated
+# settings to set the target file name as we need
+- name: get the content of created baremetal data file
+  slurp:
+    src: "{{ baremetal_data_file.path }}"
+  register: baremetal_data
+
+- name: write baremetal data file to mgmt host
+  delegate_to: localhost
+  become: no
+  copy:
+    content: "{{ baremetal_data.content | b64decode }}"
+    dest: "{{ baremetal_csv_file }}"
+  when: baremetal_csv_file is defined and baremetal_csv_file != ""

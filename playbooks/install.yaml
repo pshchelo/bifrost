@@ -4,9 +4,19 @@
   become: yes
   gather_facts: yes
   roles:
-    - { role: bifrost-prep-for-install, when: skip_install is not defined }
+    - role: bifrost-prep-for-install
+      when: skip_install is not defined
+      environment:
+        http_proxy: "{{ ansible_env.http_proxy | default('') }}"
+        https_proxy: "{{ ansible_env.https_proxy | default('') }}"
     - bifrost-keystone-install
+      environment:
+        http_proxy: "{{ ansible_env.http_proxy | default('') }}"
+        https_proxy: "{{ ansible_env.https_proxy|default('') }}"
     - bifrost-ironic-install
+      environment:
+        http_proxy: "{{ ansible_env.http_proxy | default('') }}"
+        https_proxy: "{{ ansible_env.https_proxy|default('') }}"
     - role: bifrost-keystone-client-config
       user: "{{ ansible_env.SUDO_USER }}"
       clouds:
@@ -23,8 +33,20 @@
           config_region_name: "{{ keystone.bootstrap.region_name }}"
           config_auth_url: "{{ keystone.bootstrap.public_url }}"
       when: enable_keystone is defined and enable_keystone | bool == true
-    - { role: bifrost-create-dib-image, dib_imagename: "{{ http_boot_folder }}/ipa", build_ramdisk: false, dib_os_element: "{{ ipa_dib_os_element|default('debian') }}", dib_elements: "ironic-agent {{ ipa_extra_dib_elements | default('') }}", when: create_ipa_image | bool == true }
-    - { role: bifrost-create-dib-image, dib_imagename: "{{ deploy_image }}", dib_imagetype: "qcow2", dib_elements: "vm serial-console {{ dib_init_element|default('simple-init') }} {{ extra_dib_elements|default('') }}", when: create_image_via_dib | bool == true and transform_boot_image | bool == false }
-  environment:
-    http_proxy: "{{ lookup('env','http_proxy') }}"
-    https_proxy: "{{ lookup('env','https_proxy') }}"
+    - role: bifrost-create-dib-image
+      dib_imagename: "{{ http_boot_folder }}/ipa"
+      build_ramdisk: false
+      dib_os_element: "{{ ipa_dib_os_element|default('debian') }}"
+      dib_elements: "ironic-agent {{ ipa_extra_dib_elements | default('') }}"
+      when: create_ipa_image | bool == true
+      environment:
+        http_proxy: "{{ ansible_env.http_proxy | default('') }}"
+        https_proxy: "{{ ansible_env.https_proxy | default('') }}"
+    - role: bifrost-create-dib-image
+      dib_imagename: "{{ deploy_image }}"
+      dib_imagetype: "qcow2"
+      dib_elements: "vm serial-console {{ dib_init_element|default('simple-init') }} {{ extra_dib_elements|default('') }}"
+      when: create_image_via_dib | bool == true and transform_boot_image | bool == false
+      environment:
+        http_proxy: "{{ ansible_env.http_proxy | default('') }}"
+        https_proxy: "{{ ansible_env.https_proxy | default('') }}"

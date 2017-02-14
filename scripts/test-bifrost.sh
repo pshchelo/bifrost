@@ -3,9 +3,10 @@
 set -eux
 set -o pipefail
 export PYTHONUNBUFFERED=1
+export ANSIBLE_INSTALL_ROOT=${ANSIBLE_INSTALL_ROOT:-/opt/stack}
+export ANSIBLE_PIP_VERSION="<2.2"
 SCRIPT_HOME="$(cd "$(dirname "$0")" && pwd)"
 BIFROST_HOME=$SCRIPT_HOME/..
-ANSIBLE_INSTALL_ROOT=${ANSIBLE_INSTALL_ROOT:-/opt/stack}
 ENABLE_VENV="false"
 USE_DHCP="false"
 USE_VENV="false"
@@ -99,39 +100,39 @@ cd $BIFROST_HOME/playbooks
 # Syntax check of dynamic inventory test path
 for task in syntax-check list-tasks; do
     ${ANSIBLE} -vvvv \
-           -i inventory/localhost \
+           -i inventory/target \
            test-bifrost-create-vm.yaml \
            --${task}
     ${ANSIBLE} -vvvv \
-           -i inventory/localhost \
+           -i inventory/target \
            ${TEST_PLAYBOOK} \
            --${task} \
            -e testing_user=${TESTING_USER}
 done
 
+# Set BIFROST_INVENTORY_SOURCE
+export BIFROST_INVENTORY_SOURCE=/tmp/baremetal.csv
+
 # Create the test VM
 ${ANSIBLE} -vvvv \
-       -i inventory/localhost \
+       -i inventory/target \
        test-bifrost-create-vm.yaml \
        -e test_vm_num_nodes=${TEST_VM_NUM_NODES} \
        -e test_vm_memory_size=${VM_MEMORY_SIZE} \
        -e test_vm_domain_type=${VM_DOMAIN_TYPE} \
+       -e baremetal_csv_file=${BIFROST_INVENTORY_SOURCE} \
        -e enable_venv=${ENABLE_VENV}
 
 if [ ${USE_DHCP} = "true" ]; then
     # cut file to limit number of nodes to enroll for testing purposes
-    head -n -2 /tmp/baremetal.csv > /tmp/baremetal.csv.new && mv /tmp/baremetal.csv.new /tmp/baremetal.csv
+    head -n -2 ${BIFROST_INVENTORY_SOURCE} > ${BIFROST_INVENTORY_SOURCE}.new && \ 
+    mv ${BIFROST_INVENTORY_SOURCE}.new ${BIFROST_INVENTORY_SOURCE}
 fi
 
 set +e
-
-# Set BIFROST_INVENTORY_SOURCE
-export BIFROST_INVENTORY_SOURCE=/tmp/baremetal.csv
-
 # Execute the installation and VM startup test.
-
 ${ANSIBLE} -vvvv \
-    -i inventory/bifrost_inventory.py \
+    -i inventory \
     ${TEST_PLAYBOOK} \
     -e use_cirros=${USE_CIRROS} \
     -e testing_user=${TESTING_USER} \

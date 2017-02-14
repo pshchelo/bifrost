@@ -1,7 +1,6 @@
 # Create a default VM
 ---
-- hosts: localhost
-  connection: local
+- hosts: target
   name: "Executes install, enrollment, and testing in one playbook"
   become: yes
   gather_facts: yes

@@ -1,6 +1,5 @@
 ---
-- hosts: localhost
-  connection: local
+- hosts: target
   name: "Remove the master_images folder and deployment kernel/ramdisk for clean redeployments when testing."
   become: yes
   gather_facts: yes
